@@ -2910,7 +2910,7 @@ function renderPhaseFeedback(body, state) {
           <button onclick="changeDuration(1)" style="width:30px;height:30px;border:2px solid var(--border);border-radius:7px;background:white;font-size:16px;font-weight:700;cursor:pointer;color:var(--primary);display:flex;align-items:center;justify-content:center">+</button>
         </div>
         <button class="btn-next-phase" onclick="nextPhaseWithDuration()" style="width:100%;padding:10px;font-size:14px">▶ ${phaseNum+1}단계 시작</button>
-      </div>` : `<button class="btn-next-phase" onclick="nextPhase()" style="padding:12px 20px">💡 최종 피드백 보기</button>`}
+      </div>` : `<button class="btn-next-phase" onclick="nextPhase()" style="width:100%;padding:10px;font-size:14px">💡 최종 피드백 보기</button>`}
       <button class="btn-prev-phase" onclick="prevPhase()" style="width:100%;margin-right:0;text-align:center;justify-content:center">◀ ${phaseNum}단계로 돌아가기</button>
       <button onclick="showQRModal(roomCode)" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:8px;background:white;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;color:var(--muted);transition:all 0.2s;display:flex;align-items:center;gap:6px;justify-content:center" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">📱 QR 재공유</button>
     </div>` : `<p style="font-size:13px;color:var(--muted);margin-top:6px">모더레이터가 다음 단계를 진행합니다.</p>`;
