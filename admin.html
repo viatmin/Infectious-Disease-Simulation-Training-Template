@@ -501,7 +501,7 @@ function getActiveRoles(phase) {
 // ═══════════════════════════════════════════════════════
 //  LOGIN / AUTH
 // ═══════════════════════════════════════════════════════
-const DEFAULT_PASSWORD = 'medi2024!';
+const DEFAULT_PASSWORD = 'admin1234';
 
 function getAdminPassword() {
   return localStorage.getItem('ttx_admin_password') || DEFAULT_PASSWORD;
@@ -1000,8 +1000,6 @@ function changeAdminPassword() {
   if (!newPw) { alert('새 비밀번호를 입력하세요.'); return; }
   if (newPw.length < 4) { alert('비밀번호는 4자 이상이어야 합니다.'); return; }
   localStorage.setItem('ttx_admin_password', newPw);
-  db.ref('settings/adminPassword').set(newPw)
-    .catch(e => console.warn('Firebase 비밀번호 저장 실패:', e));
   document.getElementById('new-pw').value = '';
   showToast('✅ 비밀번호가 변경되었습니다');
 }
@@ -1038,14 +1036,7 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Firebase에서 최신 비밀번호를 먼저 동기화한 뒤 세션 확인
-db.ref('settings/adminPassword').once('value').then(snap => {
-  if (snap.exists() && snap.val()) {
-    localStorage.setItem('ttx_admin_password', snap.val());
-  }
-}).catch(() => {}).finally(() => {
-  checkSession();
-});
+checkSession();
 </script>
 </body>
 </html>
