@@ -92,6 +92,12 @@
     transition: opacity 0.15s; font-family: inherit;
   }
   .admin-scenario-item:hover .del-btn { opacity: 1; }
+  .admin-scenario-item .hide-btn {
+    opacity: 0; background: none; border: none; cursor: pointer; font-size: 13px;
+    padding: 2px 4px; border-radius: 4px; transition: opacity 0.15s;
+  }
+  .admin-scenario-item:hover .hide-btn { opacity: 1; }
+  .admin-scenario-item.hidden-scenario .hide-btn { opacity: 1; }
   .btn-add-scenario {
     display: block; width: calc(100% - 40px); margin: 12px 20px 0;
     padding: 10px; background: var(--primary); color: white; border: none;
@@ -625,13 +631,22 @@ function renderAdminSidebar() {
   const scenarios = getScenarios();
   const list = document.getElementById('admin-scenario-list');
   list.innerHTML = scenarios.map((sc, i) => `
-    <button class="admin-scenario-item ${i === adminSelectedScenarioIndex ? 'active' : ''}" onclick="selectAdminScenario(${i})">
+    <button class="admin-scenario-item ${i === adminSelectedScenarioIndex ? 'active' : ''} ${sc.hidden ? 'hidden-scenario' : ''}" onclick="selectAdminScenario(${i})">
       <span>${sc.emoji}</span>
-      <span style="flex:1">${sc.name}</span>
+      <span style="flex:1;${sc.hidden ? 'opacity:0.45;text-decoration:line-through' : ''}">${sc.name}</span>
+      <span class="hide-btn" title="${sc.hidden ? '표시' : '숨기기'}" onclick="event.stopPropagation();toggleHideScenario(${i})">${sc.hidden ? '👁' : '🙈'}</span>
       ${i >= DEFAULT_SCENARIOS.length || !DEFAULT_SCENARIOS.find(d => d.id === sc.id)
         ? `<span class="del-btn" onclick="event.stopPropagation();deleteAdminScenario(${i})">✕</span>` : ''}
     </button>
   `).join('');
+}
+
+function toggleHideScenario(idx) {
+  const scenarios = getScenarios();
+  scenarios[idx].hidden = !scenarios[idx].hidden;
+  saveScenarios(scenarios);
+  renderAdminSidebar();
+  showToast(scenarios[idx].hidden ? '🙈 메인 화면에서 숨겼습니다' : '👁 메인 화면에 표시됩니다');
 }
 
 function selectAdminScenario(idx) {
@@ -985,6 +1000,8 @@ function changeAdminPassword() {
   if (!newPw) { alert('새 비밀번호를 입력하세요.'); return; }
   if (newPw.length < 4) { alert('비밀번호는 4자 이상이어야 합니다.'); return; }
   localStorage.setItem('ttx_admin_password', newPw);
+  db.ref('settings/adminPassword').set(newPw)
+    .catch(e => console.warn('Firebase 비밀번호 저장 실패:', e));
   document.getElementById('new-pw').value = '';
   showToast('✅ 비밀번호가 변경되었습니다');
 }
@@ -1021,8 +1038,14 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// 세션 확인 후 초기화
-checkSession();
+// Firebase에서 최신 비밀번호를 먼저 동기화한 뒤 세션 확인
+db.ref('settings/adminPassword').once('value').then(snap => {
+  if (snap.exists() && snap.val()) {
+    localStorage.setItem('ttx_admin_password', snap.val());
+  }
+}).catch(() => {}).finally(() => {
+  checkSession();
+});
 </script>
 </body>
 </html>
