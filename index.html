@@ -34,6 +34,7 @@
   .home-header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
   .home-header p { font-size: 15px; opacity: 0.8; }
   .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; max-width: 860px; width: 100%; }
+  .scenario-grid.single { grid-template-columns: 1fr; max-width: 380px; }
   .scenario-card-btn {
     background: white; border-radius: 16px; padding: 32px 24px; text-align: center;
     border: none; cursor: pointer; font-family: inherit; transition: all 0.2s;
@@ -51,6 +52,10 @@
     cursor: pointer; font-family: inherit; transition: all 0.2s;
   }
   .btn-tutorial:hover { background: rgba(255,255,255,0.22); }
+  .home-contact-msg {
+    margin-top: 14px; color: rgba(255,255,255,0.65); font-size: 13px;
+    text-align: center; line-height: 1.6;
+  }
 
   /* ── LOGIN SCREEN ── */
   #screen-login {
@@ -669,6 +674,7 @@
   <div class="home-footer">
     <a class="btn-tutorial" href="모더레이터_튜토리얼.html" target="_blank" rel="noopener" style="text-decoration:none">📖 모더레이터 튜토리얼</a>
   </div>
+  <p class="home-contact-msg" id="home-contact-msg"></p>
 </div>
 
 <!-- ═══════════════════════════ LOGIN SCREEN ═══════════════════════════ -->
@@ -1255,8 +1261,9 @@ function leaveToLogin() {
 //  HOME RENDER
 // ═══════════════════════════════════════════════════════
 function renderHomeScenarios() {
-  const scenarios = getScenarios();
+  const scenarios = getScenarios().filter(sc => !sc.hidden);
   const grid = document.getElementById('scenario-grid');
+  grid.className = 'scenario-grid' + (scenarios.length === 1 ? ' single' : '');
   grid.innerHTML = scenarios.map(sc => `
     <button class="scenario-card-btn" onclick="selectScenario('${sc.id}')">
       <span class="sc-badge" style="background:${sc.color}">${sc.name}</span>
@@ -1281,6 +1288,15 @@ const firebaseConfig = {
 };
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
+// 연락 문구 로드
+db.ref('settings/contactMessage').on('value', snap => {
+  const el = document.getElementById('home-contact-msg');
+  if (!el) return;
+  const msg = snap.val();
+  el.textContent = msg || '';
+  el.style.display = (msg && msg.trim()) ? '' : 'none';
+});
 
 // ═══════════════════════════════════════════════════════
 //  ROOM (방) 관리

@@ -92,6 +92,12 @@
     transition: opacity 0.15s; font-family: inherit;
   }
   .admin-scenario-item:hover .del-btn { opacity: 1; }
+  .admin-scenario-item .hide-btn {
+    opacity: 0; background: none; border: none; cursor: pointer; font-size: 13px;
+    padding: 2px 4px; border-radius: 4px; transition: opacity 0.15s;
+  }
+  .admin-scenario-item:hover .hide-btn { opacity: 1; }
+  .admin-scenario-item.hidden-scenario .hide-btn { opacity: 1; }
   .btn-add-scenario {
     display: block; width: calc(100% - 40px); margin: 12px 20px 0;
     padding: 10px; background: var(--primary); color: white; border: none;
@@ -279,6 +285,12 @@
             <button class="btn-group-count" onclick="changeGroupCount(1)">+</button>
           </div>
           <p class="group-count-hint">현재 <strong id="admin-group-count-num">4</strong>개 조로 운영 (최대 9조)</p>
+        </div>
+        <div class="pw-section">
+          <label>💬 홈 화면 안내 문구</label>
+          <textarea id="contact-msg-input" rows="3" placeholder="예: 오류나 문의사항은 여기로 연락주세요"
+            style="width:100%;padding:8px 10px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;line-height:1.5;margin-bottom:6px"></textarea>
+          <button class="btn-pw-change" style="width:100%" onclick="saveContactMessage()">저장</button>
         </div>
         <div class="pw-section">
           <label>🔑 관리자 비밀번호 변경</label>
@@ -495,7 +507,7 @@ function getActiveRoles(phase) {
 // ═══════════════════════════════════════════════════════
 //  LOGIN / AUTH
 // ═══════════════════════════════════════════════════════
-const DEFAULT_PASSWORD = 'medi2024!';
+const DEFAULT_PASSWORD = 'admin1234';
 
 function getAdminPassword() {
   return localStorage.getItem('ttx_admin_password') || DEFAULT_PASSWORD;
@@ -572,6 +584,13 @@ function saveGroupCount(n) {
   localStorage.setItem('ttx_group_count', String(n));
   db.ref('settings/groupCount').set(n);
 }
+function saveContactMessage() {
+  const msg = (document.getElementById('contact-msg-input').value || '').trim();
+  db.ref('settings/contactMessage').set(msg)
+    .then(() => showToast('✅ 안내 문구가 저장되었습니다'))
+    .catch(() => showToast('❌ 저장 실패'));
+}
+
 function changeGroupCount(delta) {
   let n = Math.min(MAX_GROUPS, Math.max(MIN_GROUPS, getGroupCount() + delta));
   saveGroupCount(n);
@@ -619,19 +638,34 @@ function initAdminPanel() {
       renderAdminGroupCount();
     }
   }).catch(() => {});
+
+  // Firebase에서 연락 문구 로드
+  db.ref('settings/contactMessage').once('value').then(snap => {
+    const el = document.getElementById('contact-msg-input');
+    if (el && snap.exists()) el.value = snap.val() || '';
+  }).catch(() => {});
 }
 
 function renderAdminSidebar() {
   const scenarios = getScenarios();
   const list = document.getElementById('admin-scenario-list');
   list.innerHTML = scenarios.map((sc, i) => `
-    <button class="admin-scenario-item ${i === adminSelectedScenarioIndex ? 'active' : ''}" onclick="selectAdminScenario(${i})">
+    <button class="admin-scenario-item ${i === adminSelectedScenarioIndex ? 'active' : ''} ${sc.hidden ? 'hidden-scenario' : ''}" onclick="selectAdminScenario(${i})">
       <span>${sc.emoji}</span>
-      <span style="flex:1">${sc.name}</span>
+      <span style="flex:1;${sc.hidden ? 'opacity:0.45;text-decoration:line-through' : ''}">${sc.name}</span>
+      <span class="hide-btn" title="${sc.hidden ? '표시' : '숨기기'}" onclick="event.stopPropagation();toggleHideScenario(${i})">${sc.hidden ? '👁' : '🙈'}</span>
       ${i >= DEFAULT_SCENARIOS.length || !DEFAULT_SCENARIOS.find(d => d.id === sc.id)
         ? `<span class="del-btn" onclick="event.stopPropagation();deleteAdminScenario(${i})">✕</span>` : ''}
     </button>
   `).join('');
+}
+
+function toggleHideScenario(idx) {
+  const scenarios = getScenarios();
+  scenarios[idx].hidden = !scenarios[idx].hidden;
+  saveScenarios(scenarios);
+  renderAdminSidebar();
+  showToast(scenarios[idx].hidden ? '🙈 메인 화면에서 숨겼습니다' : '👁 메인 화면에 표시됩니다');
 }
 
 function selectAdminScenario(idx) {
@@ -1021,7 +1055,6 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// 세션 확인 후 초기화
 checkSession();
 </script>
 </body>
